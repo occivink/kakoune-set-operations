@@ -78,10 +78,11 @@ sub parse_shell_quoted {
 }
 
 sub read_array {
+    my $preeval = shift;
     my $what = shift;
 
     open (my $command_fifo, '>', $command_fifo_name);
-    print $command_fifo "echo -quoting shell -to-file $response_fifo_name -- $what";
+    print $command_fifo "eval -draft %{ $preeval ; echo -quoting shell -to-file $response_fifo_name -- $what }";
     close($command_fifo);
 
     # slurp the response_fifo content
@@ -92,15 +93,7 @@ sub read_array {
 }
 
 sub read_line_lengths {
-    open (my $command_fifo, '>', $command_fifo_name);
-    print $command_fifo "eval -draft %{ exec '%<a-s>);' ; echo -quoting shell -to-file $response_fifo_name -- %val{selections_desc} }";
-    close($command_fifo);
-
-    # slurp the response_fifo content
-    open (my $response_fifo, '<', $response_fifo_name);
-    my $response_quoted = do { local $/; <$response_fifo> };
-    close($response_fifo);
-    my @descs = parse_shell_quoted($response_quoted);
+    my @descs = read_array("exec '%<a-s>);'", "%val{selections_desc}");
     my @res;
     for my $desc (@descs) {
         my @spl = split(/\./, $desc);
@@ -150,14 +143,10 @@ sub neighbor_coord {
     my $coord = shift;
     my $direction = shift;
     my @bob = split(/\./, $coord);
-    #print($bob[1]);
-    #print($$lines_length_ref[$bob[0] - 1]);
     if ($direction == 1) {
         if ($bob[1] < ($$lines_length_ref[$bob[0] - 1])) {
-            #print("ok");
             return $bob[0] . "." . ($bob[1] + 1);
         } else {
-            #print("BAD");
             return ($bob[0] + 1) . "." . 0;
         }
     } elsif ($direction == -1) {
@@ -215,23 +204,14 @@ sub compute_overlap {
     return 0;
 }
 
-my @current_selections_descs = read_array("%val{selections_desc}");
-my @register_selections_descs = read_array("%reg{$register_name}");
-# TODO check that the buffer/timestamp is correct
-shift(@register_selections_descs);
+my @current_selections_descs = read_array("exec \"%reg{hash}()\"", "%val{selections_desc}");
+my @register_selections_descs = read_array("exec \"z%reg{hash}()\"", "%val{selections_desc}");
 
 my $num_current_selections = scalar(@current_selections_descs);
 my $num_register_selections = scalar(@register_selections_descs);
 if ($num_current_selections == 0 || $num_register_selections == 0) {
     exit(1);
 }
-
-my $main_selection_index = $ENV{"kak_main_reg_hash"} - 1; # reg_hash is 1-based
-for my $i ($main_selection_index .. ($num_current_selections - 1)) {
-    my $desc = shift(@current_selections_descs);
-    push(@current_selections_descs, $desc);
-}
-
 
 my @new_selections;
 
