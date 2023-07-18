@@ -71,7 +71,7 @@ sub parse_shell_quoted {
             push(@res, $elem);
             $elem = "";
         } else {
-            exit(1);
+            exit(2);
         }
     }
     return @res;
@@ -111,7 +111,7 @@ sub compare_coords {
     my $first = shift;
     my $second = shift;
     if ("$first $second" !~ m/(\d+)\.(\d+) (\d+)\.(\d+)/) {
-        exit(1);
+        exit(3);
     }
     if ($1 < $3) {
         return -1;
@@ -128,7 +128,7 @@ sub compare_coords {
 sub get_selection_coords {
     my $input = shift;
     if ($input !~ m/^(.*?),(.*?)$/) {
-        exit(1);
+        exit(4);
     }
     my $res = compare_coords($1, $2);
     if ($res == 1) {
@@ -200,7 +200,7 @@ sub compute_overlap {
         return FIRST_BEGIN_OVERLAPS_SECOND_END;
     }
 
-    exit(1);
+    exit(5);
     return 0;
 }
 
@@ -210,7 +210,7 @@ my @register_selections_descs = read_array("exec \"z%reg{hash}()\"", "%val{selec
 my $num_current_selections = scalar(@current_selections_descs);
 my $num_register_selections = scalar(@register_selections_descs);
 if ($num_current_selections == 0 || $num_register_selections == 0) {
-    exit(1);
+    exit(6);
 }
 
 my @new_selections;
