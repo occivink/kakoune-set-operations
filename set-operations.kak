@@ -386,7 +386,7 @@ if ($operation eq 'INTERSECTION') {
 
         if ($advance_cur == 1) {
             $i++;
-            if ($i == $num_register_selections) {
+            if ($i == $num_current_selections) {
                 last;
             }
             ($cur_beg, $cur_end) = get_selection_coords($current_selections_descs[$i]);
