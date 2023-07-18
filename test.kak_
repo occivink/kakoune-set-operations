@@ -26,6 +26,11 @@ define-command assert-selections-are -params 1 %{
     }
 }
 
+define-command do-operation-and-check -params 2 %{
+    set-operation %arg{1}
+    assert-selections-are %arg{2}
+}
+
 edit -scratch *set-operations-test-1*
 
 # basic tests
@@ -33,48 +38,38 @@ exec '%diab<esc>'
 
 ## union
 exec -save-regs '' 'ggZl'
-set-operation union
-assert-selections-are "'a' 'b'"
+do-operation-and-check union "'a' 'b'"
 
 exec -save-regs '' 'gglZh'
-set-operation union
-assert-selections-are "'a' 'b'"
+do-operation-and-check union "'a' 'b'"
 
 exec -save-regs '' 'ggLZ'
-set-operation union
-assert-selections-are "'ab'"
+do-operation-and-check union "'ab'"
 
 ## intersection 
 exec -save-regs '' 'ggLZ'
-set-operation intersection
-assert-selections-are "'ab'"
+do-operation-and-check intersection "'ab'"
 
 exec -save-regs '' 'ggZL'
-set-operation intersection
-assert-selections-are "'a'"
+do-operation-and-check intersection "'a'"
 
 exec -save-regs '' 'ggLZgg'
-set-operation intersection
-assert-selections-are "'a'"
+do-operation-and-check intersection "'a'"
 
 exec -save-regs '' 'gglZhL'
-set-operation intersection
-assert-selections-are "'b'"
+do-operation-and-check intersection "'b'"
 
 exec -save-regs '' 'ggLZhl'
-set-operation intersection
-assert-selections-are "'b'"
+do-operation-and-check intersection "'b'"
 
 ## difference
 exec -save-regs '' 'ggLZ'
 assert-command-fails %{ set-operation difference }
 
 exec -save-regs '' 'ggZL'
-set-operation difference
-assert-selections-are "'b'"
+do-operation-and-check difference "'b'"
 
 exec -save-regs '' 'gglZhL'
-set-operation difference
-assert-selections-are "'a'"
+do-operation-and-check difference "'a'"
 
 delete-buffer
