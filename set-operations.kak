@@ -194,9 +194,9 @@ sub compute_overlap {
         return FIRST_CONTAINED_BY_SECOND;
     }
 
-    if ($res1 >= 0) {
+    if ($res3 < 0) {
         return FIRST_END_OVERLAPS_SECOND_BEGIN;
-    } elsif ($res2 <= 0) {
+    } elsif ($res3 > 0) {
         return FIRST_BEGIN_OVERLAPS_SECOND_END;
     }
 
