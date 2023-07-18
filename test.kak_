@@ -1,0 +1,80 @@
+try %{
+    require-module set-operations
+} catch %{
+    source set-operations.kak
+    require-module set-operations
+}
+
+define-command assert-command-fails -params 1 %{
+    eval -save-regs e %{
+        reg e ''
+        try %{
+            eval %arg{1}
+            reg e 'fail "TODO, but should have"'
+        }
+        eval %reg{e}
+    }
+}
+
+define-command assert-selections-are -params 1 %{
+    eval %sh{
+        if [ "$1" != "$kak_quoted_selections" ]; then
+            printf 'echo -debug %%arg{1} ; '
+            printf 'echo -quoting shell -debug %%val{selections} ; '
+            printf 'fail "Check failed" ; '
+        fi
+    }
+}
+
+edit -scratch *set-operations-test-1*
+
+# basic tests
+exec '%diab<esc>'
+
+## union
+exec -save-regs '' 'ggZl'
+set-operation union
+assert-selections-are "'a' 'b'"
+
+exec -save-regs '' 'gglZh'
+set-operation union
+assert-selections-are "'a' 'b'"
+
+exec -save-regs '' 'ggLZ'
+set-operation union
+assert-selections-are "'ab'"
+
+## intersection 
+exec -save-regs '' 'ggLZ'
+set-operation intersection
+assert-selections-are "'ab'"
+
+exec -save-regs '' 'ggZL'
+set-operation intersection
+assert-selections-are "'a'"
+
+exec -save-regs '' 'ggLZgg'
+set-operation intersection
+assert-selections-are "'a'"
+
+exec -save-regs '' 'gglZhL'
+set-operation intersection
+assert-selections-are "'b'"
+
+exec -save-regs '' 'ggLZhl'
+set-operation intersection
+assert-selections-are "'b'"
+
+## difference
+exec -save-regs '' 'ggLZ'
+assert-command-fails %{ set-operation difference }
+
+exec -save-regs '' 'ggZL'
+set-operation difference
+assert-selections-are "'b'"
+
+exec -save-regs '' 'gglZhL'
+set-operation difference
+assert-selections-are "'a'"
+
+delete-buffer

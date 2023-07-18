@@ -1,6 +1,6 @@
 provide-module set-operations %§
 
-define-command set-operation -hidden -params .. -docstring '
+define-command set-operation -params .. -docstring '
 TODO
 ' %{
     # TODO re-update the mark register, so that the timestamp matches
@@ -91,6 +91,29 @@ sub read_array {
     return parse_shell_quoted($response_quoted);
 }
 
+sub read_line_lengths {
+    open (my $command_fifo, '>', $command_fifo_name);
+    print $command_fifo "eval -draft %{ exec '%<a-s>);' ; echo -quoting shell -to-file $response_fifo_name -- %val{selections_desc} }";
+    close($command_fifo);
+
+    # slurp the response_fifo content
+    open (my $response_fifo, '<', $response_fifo_name);
+    my $response_quoted = do { local $/; <$response_fifo> };
+    close($response_fifo);
+    my @descs = parse_shell_quoted($response_quoted);
+    my @res;
+    for my $desc (@descs) {
+        my @spl = split(/\./, $desc);
+        push(@res, $spl[2]);
+    }
+    return @res;
+}
+
+
+# returns
+#   -1 if first < second
+#    0 if first == second
+#   +1 if first > second
 sub compare_coords {
     my $first = shift;
     my $second = shift;
@@ -122,6 +145,32 @@ sub get_selection_coords {
     }
 }
 
+sub neighbor_coord {
+    my $lines_length_ref = shift;
+    my $coord = shift;
+    my $direction = shift;
+    my @bob = split(/\./, $coord);
+    #print($bob[1]);
+    #print($$lines_length_ref[$bob[0] - 1]);
+    if ($direction == 1) {
+        if ($bob[1] < ($$lines_length_ref[$bob[0] - 1])) {
+            #print("ok");
+            return $bob[0] . "." . ($bob[1] + 1);
+        } else {
+            #print("BAD");
+            return ($bob[0] + 1) . "." . 0;
+        }
+    } elsif ($direction == -1) {
+        if ($bob[1] > 0) {
+            return $bob[0] . "." . ($bob[1] - 1);
+        } else {
+            return ($bob[0] - 1) . "." . $$lines_length_ref[$bob[0]];
+        }
+    } else {
+        exit(5);
+    }
+}
+
 use constant FIRST_ENTIRELY_BEFORE_SECOND => 1;
 use constant FIRST_END_OVERLAPS_SECOND_BEGIN => 2;
 use constant FIRST_ENTIRELY_AFTER_SECOND => 3;
@@ -130,7 +179,7 @@ use constant FIRST_CONTAINS_SECOND => 5;
 use constant FIRST_CONTAINED_BY_SECOND => 6;
 use constant FIRST_EQUALS_SECOND => 7;
 
-sub compare_selection {
+sub compute_overlap {
     my $beg1 = shift;
     my $end1 = shift;
     my $beg2 = shift;
@@ -177,9 +226,12 @@ if ($num_current_selections == 0 || $num_register_selections == 0) {
     exit(1);
 }
 
-# in $kak_selections_desc, the main selection is at the front
-# we just put it back in its place, so that it matches $kak_selections
-# TODO
+my $main_selection_index = $ENV{"kak_main_reg_hash"} - 1; # reg_hash is 1-based
+for my $i ($main_selection_index .. ($num_current_selections - 1)) {
+    my $desc = shift(@current_selections_descs);
+    push(@current_selections_descs, $desc);
+}
+
 
 my @new_selections;
 
@@ -198,7 +250,7 @@ if ($operation eq 'INTERSECTION') {
         my ($beg1, $end1) = get_selection_coords($current_sel);
         my ($beg2, $end2) = get_selection_coords($secondary_sel);
 
-        my $overlap = compare_selection($beg1, $end1, $beg2, $end2);
+        my $overlap = compute_overlap($beg1, $end1, $beg2, $end2);
 
         if ($overlap == FIRST_ENTIRELY_BEFORE_SECOND) {
             # noop
@@ -234,15 +286,17 @@ if ($operation eq 'INTERSECTION') {
     my $cur_beg;
     my $cur_end;
     my $has_cur = 0;
-    while (1) {
+    my $i = 0;
+    my $j = 0;
+    while ($i < $num_current_selections and $j < $num_register_selections) {
         my $current_sel = $current_selections_descs[$i];
         my $secondary_sel = $register_selections_descs[$j];
 
         my ($beg1, $end1) = get_selection_coords($current_sel);
         my ($beg2, $end2) = get_selection_coords($secondary_sel);
 
-        my $overlap = compare_selection($beg1, $end1, $beg2, $end2);
-        
+        my $overlap = compute_overlap($beg1, $end1, $beg2, $end2);
+
         if ($overlap == FIRST_ENTIRELY_BEFORE_SECOND) {
             if ($has_cur) {
                 push(@new_selections, "$cur_beg,$end1");
@@ -290,52 +344,86 @@ if ($operation eq 'INTERSECTION') {
         }
 
         if (compare_coords($end1, $end2) >= 0) {
-            $i++;
-        } else {
             $j++;
+        } else {
+            $i++;
         }
     }
+    while ($i < $num_current_selections) {
+        push(@new_selections, $current_selections_descs[$i]);
+        $i++;
+    }
+    while ($j < $num_register_selections) {
+        push(@new_selections, $register_selections_descs[$j]);
+        $j++;
+    }
 } elsif ($operation eq 'DIFFERENCE') {
+
+    my @lines_lengths = read_line_lengths();
+
     my $i = 0;
     my $j = 0;
+
+    my ($cur_beg, $cur_end) = get_selection_coords($current_selections_descs[0]);
+    my ($second_beg, $second_end) = get_selection_coords($register_selections_descs[0]);
     while (1) {
-        my $cur = $current_selections_descs[$i];
-        my ($cur_beg, $cur_end) = get_selection_coords($cur);
-        while (1) {
-            my $second = $register_selections_descs[$j];
-            my ($second_beg, $second_end) = get_selection_coords($second);
-            
-            my $overlap = compare_selection($cur_beg, $cur_end, $second_beg, $second_end);
-            if ($overlap == FIRST_ENTIRELY_BEFORE_SECOND) {
-                push(@new_selections, "$cur_beg,$cur_end");
-                last;
-            } elsif ($overlap == FIRST_EQUALS_SECOND) {
-                last;
-            } elsif ($overlap == FIRST_CONTAINS_SECOND) {
-                if (compare_coords($second_beg, $cur_beg) == 1) {
-                    push(, "$cur_beg,$second.beg-1")
-                }
-                if (compare_coords($cur_end, $second_end) == 1) {
-                    cur_beg = second_end + 1;
-                } else {
-                    $j++;
-                    last;
-                }
-            } elsif ($overlap == FIRST_END_OVERLAPS_SECOND_BEGIN) {
-                if (compare_coords($second_beg, cur_beg) == 1) {
-                    push(@, "$cur_beg,$second_beg" -1);
-                }
-                last;
-            } elsif ($overlap == FIRST_ENTIRELY_AFTER_SECOND) {
-                # empty
-            } elsif ($overlap == FIRST_CONTAINED_BY_SECOND) {
-                last;
-            } elsif ($overlap == FIRST_BEGIN_OVERLAPS_SECOND_END) {
-                $cur_beg = $second_end + 1;
+        my $advance_cur = 0;
+        my $advance_second = 0;
+
+        my $overlap = compute_overlap($cur_beg, $cur_end, $second_beg, $second_end);
+        if ($overlap == FIRST_ENTIRELY_BEFORE_SECOND) {
+            push(@new_selections, "$cur_beg,$cur_end");
+            $advance_cur = 1;
+        } elsif ($overlap == FIRST_EQUALS_SECOND) {
+            $advance_cur = 1;
+            $advance_second = 1;
+        } elsif ($overlap == FIRST_CONTAINS_SECOND) {
+            if (compare_coords($cur_beg, $second_beg) == -1) {
+                # 'cur' starts before 'second'
+                my $next_beg = neighbor_coord(\@lines_lengths, $second_beg, -1);
+                push(@new_selections, "$cur_beg,$next_beg")
             }
-            $j++;
+            if (compare_coords($cur_end, $second_end) == 1) {
+                # 'cur' finishes after 'second'
+                $cur_beg = neighbor_coord(\@lines_lengths, $second_end, 1);
+            } else {
+                # 'cur' finishes exactly like 'second'
+                $advance_cur = 1;
+            }
+            $advance_second = 1;
+        } elsif ($overlap == FIRST_END_OVERLAPS_SECOND_BEGIN) {
+            my $next_beg = neighbor_coord(\@lines_lengths, $second_beg, -1);
+            push(@new_selections, "$cur_beg,$next_beg");
+            $advance_cur = 1;
+        } elsif ($overlap == FIRST_ENTIRELY_AFTER_SECOND) {
+            $advance_second = 1;
+        } elsif ($overlap == FIRST_CONTAINED_BY_SECOND) {
+            $advance_cur = 1;
+        } elsif ($overlap == FIRST_BEGIN_OVERLAPS_SECOND_END) {
+            $cur_beg = neighbor_coord(\@lines_lengths, $second_end, 1);
+            $advance_second = 1;
         }
-        $i++;
+
+        if ($advance_cur == 1) {
+            $i++;
+            if ($i == $num_register_selections) {
+                last;
+            }
+            ($cur_beg, $cur_end) = get_selection_coords($current_selections_descs[$i]);
+        }
+        if ($advance_second == 1) {
+            $j++;
+            if ($j == $num_register_selections) {
+                push(@new_selections, "$cur_beg,$cur_end");
+                $i++;
+                while ($i < $num_current_selections) {
+                    push(@new_selections, $current_selections_descs[$i]);
+                    $i++;
+                }
+                last;
+            }
+            ($second_beg, $second_end) = get_selection_coords($register_selections_descs[$j]);
+        }
     }
 }
 
@@ -356,123 +444,5 @@ EOF
         fi
     }
 }
-
-#
-#Int:
-#            []      [ ]
-#
-#Union:
-#[   ][         ]  [     ]
-#
-#difference
-#[   ]         []
-#
-#leftdifff
-#     [     ]      []   []
-#
-#i = 0
-#j = 0
-#[   ]       [  ]    [ ]
-#     [       ]    [     ]
-##intersection
-#while (true) {
-#    main-sel = sels1[i]
-#    secondary-sel = sels2[j]
-#
-#    overlap = compute-overlap-type(first, second)
-#
-#    switch(overlap)
-#        first_before:
-#        second_before:
-#            // nothing
-#        first_contains:
-#            push(second)
-#        second_contains:
-#            push(first)
-#        first_end_overlaps_second_beg:
-#            push({second.beg, first.end})
-#        second_end_overlaps_first_beg:
-#            push({first.beg, second.end})
-#
-#    if (j == max && i == max)
-#        break
-#    else if (i == max)
-#        ++i
-#    else if (j == max)
-#        ++j
-#    else if (first.end >= second.end)
-#        ++j
-#    else
-#        ++i
-#}
-#
-##union
-#cur = None
-#[][] [      ]     [          ]
-#   [  ]  [  ]   [ ]         [    ]
-#while (true) {
-#    main-sel = sels1[i]
-#    secondary-sel = sels2[j]
-#
-#    overlap = compute-overlap-type(main-sel, secondary-sel)
-#
-#    if (overlap == left-overlap|right-overlap)
-#        if cur
-#            cur.end = second.end
-#        else
-#            cur = {first.beg, second.end}
-#    if (overlap = contained1|contained2)
-#        if cur
-#            cur.end = containing.end
-#        else
-#            cur = containig
-#    if (entirely-before|entirely-before)
-#        if cur
-#            cur.end = before_one.end
-#        else
-#            cur = before_one
-#        push(cur)
-#        cur = None
-#
-#    if (secondary.end >= main.end)
-#        ++i
-#    else
-#        ++j
-#
-#}
-#
-#while True:
-#    first = sel[i]
-#    cur = first
-#    while True:
-#        second = sel[j]
-#        overlap = compute_overlap(cur, second)
-#        switch(overlap)
-#            first_before:
-#                push(cur)
-#                break
-#            first_contains:
-#                if second.beg > cur.beg:
-#                    push(cur.beg, second.beg - 1)
-#                if cur.end > second.end
-#                    cur.beg = second.end+1
-#                else
-#                    ++j
-#                    break
-#            first_end_overlaps_second_beg:
-#                if second.beg > cur.beg:
-#                    push(cur.beg, second.beg - 1)
-#                break
-#            second_before:
-#                // empty
-#            second_contains
-#                break
-#            second_end_overlaps_first_beg:
-#                cur.beg = second.end
-#        ++j
-#    ++i
-#}
-#
-#rightdiff = leftdiff(second,main)
 
 §
