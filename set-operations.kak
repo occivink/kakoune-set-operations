@@ -426,3 +426,5 @@ EOF
 }
 
 §
+
+require-module set-operations
