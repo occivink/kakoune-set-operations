@@ -72,4 +72,11 @@ do-operation-and-check difference "'b'"
 exec -save-regs '' 'gglZhL'
 do-operation-and-check difference "'a'"
 
+exec '%diabcd<esc>'
+exec -save-regs '' 'gglLZglhL'
+do-operation-and-check difference "'d'"
+
+exec -save-regs '' 'glZggLs.<ret>'
+do-operation-and-check difference "'a' 'b'"
+
 delete-buffer
