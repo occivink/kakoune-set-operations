@@ -4,10 +4,9 @@ define-command set-operation -params .. -docstring '
 TODO
 ' %{
     # TODO re-update the mark register, so that the timestamp matches
-    eval %sh{
+    eval -save-regs '^' %sh{
         operation_set=0
         operation=''
-        register_name='^'
 
         while [ "$#" -ge 1 ]; do
             if [ "$1" = '-register' ]; then
@@ -16,7 +15,7 @@ TODO
                     printf 'fail TODO'
                     exit
                 fi
-                register_name="$1"
+                # TODO move reg content to ^
             else
                 if [ "$operation_set" != 0 ]; then
                     printf 'fail TODO'
@@ -41,13 +40,12 @@ TODO
             exit
         fi
 
-        perl - "$operation" "$register_name" <<'EOF'
+        perl - "$operation" <<'EOF'
 use strict;
 use warnings;
 
 my $operation = shift;
 $operation = uc($operation);
-my $register_name = shift;
 
 my $command_fifo_name = $ENV{"kak_command_fifo"};
 my $response_fifo_name = $ENV{"kak_response_fifo"};
