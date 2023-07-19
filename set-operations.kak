@@ -203,7 +203,7 @@ sub compute_overlap {
 }
 
 my @current_selections_descs = read_array("exec \"%reg{hash}()\"", "%val{selections_desc}");
-my @register_selections_descs = read_array("exec \"z%reg{hash}()\"", "%val{selections_desc}");
+my @register_selections_descs = read_array("exec z ; exec \"%reg{hash}()\"", "%val{selections_desc}");
 
 my $num_current_selections = scalar(@current_selections_descs);
 my $num_register_selections = scalar(@register_selections_descs);
