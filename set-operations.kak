@@ -140,18 +140,18 @@ sub neighbor_coord {
     my $lines_length_ref = shift;
     my $coord = shift;
     my $direction = shift;
-    my @bob = split(/\./, $coord);
+    my @coords = split(/\./, $coord);
     if ($direction == 1) {
-        if ($bob[1] < ($$lines_length_ref[$bob[0] - 1])) {
-            return $bob[0] . "." . ($bob[1] + 1);
+        if ($coords[1] < ($$lines_length_ref[$coords[0] - 1])) {
+            return $coords[0] . "." . ($coords[1] + 1);
         } else {
-            return ($bob[0] + 1) . "." . 0;
+            return ($coords[0] + 1) . "." . 1;
         }
     } elsif ($direction == -1) {
-        if ($bob[1] > 0) {
-            return $bob[0] . "." . ($bob[1] - 1);
+        if ($coords[1] > 1) {
+            return $coords[0] . "." . ($coords[1] - 1);
         } else {
-            return ($bob[0] - 1) . "." . $$lines_length_ref[$bob[0]];
+            return ($coords[0] - 1) . "." . $$lines_length_ref[$coords[0]];
         }
     } else {
         exit(5);
