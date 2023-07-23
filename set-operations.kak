@@ -135,6 +135,16 @@ sub get_selection_coords {
     }
 }
 
+sub min_coord {
+    my $lhs = shift;
+    my $rhs = shift;
+    if (compare_coords($lhs, $rhs) > 0) {
+        return $rhs;
+    } else {
+        return $lhs;
+    }
+}
+
 sub neighbor_coord {
     my $lines_length_ref = shift;
     my $coord = shift;
@@ -260,79 +270,76 @@ if ($operation eq 'INTERSECTION') {
         }
     }
 } elsif ($operation eq 'UNION') {
-    my $cur_beg;
-    my $cur_end;
-    my $has_cur = 0;
     my $i = 0;
     my $j = 0;
-    while ($i < $num_current_selections and $j < $num_register_selections) {
-        my $current_sel = $current_selections_descs[$i];
-        my $secondary_sel = $register_selections_descs[$j];
 
-        my ($beg1, $end1) = get_selection_coords($current_sel);
-        my ($beg2, $end2) = get_selection_coords($secondary_sel);
+    my ($first_beg, $first_end) = get_selection_coords($current_selections_descs[0]);
+    my ($second_beg, $second_end) = get_selection_coords($register_selections_descs[0]);
 
-        my $overlap = compute_overlap($beg1, $end1, $beg2, $end2);
+    my $cur_beg = undef;
+
+    while (1) {
+        my $advance_first = 0;
+        my $advance_second = 0;
+
+        my $overlap = compute_overlap($first_beg, $first_end, $second_beg, $second_end);
+        if (!defined($cur_beg)) {
+            $cur_beg = min_coord($first_beg, $second_beg);
+        }
 
         if ($overlap == FIRST_ENTIRELY_BEFORE_SECOND) {
-            if ($has_cur) {
-                push(@new_selections, "$cur_beg,$end1");
-                $has_cur = 0;
-            } else {
-                push(@new_selections, "$beg1,$end1");
-            }
-        } elsif ($overlap == FIRST_ENTIRELY_AFTER_SECOND) {
-            if ($has_cur) {
-                push(@new_selections, "$cur_beg,$end2");
-                $has_cur = 0;
-            } else {
-                push(@new_selections, "$beg2,$end2");
-            }
-        } elsif ($overlap == FIRST_CONTAINS_SECOND) {
-            if (!$has_cur) {
-                $cur_beg = $beg1;
-                $has_cur = 1;
-            }
-            $cur_end = $end1;
-        } elsif ($overlap == FIRST_CONTAINED_BY_SECOND) {
-            if (!$has_cur) {
-                $cur_beg = $beg2;
-                $has_cur = 1;
-            }
-            $cur_end = $end2;
+            push(@new_selections, "$cur_beg,$first_end");
+            $cur_beg = undef;
+            $advance_first = 1;
         } elsif ($overlap == FIRST_EQUALS_SECOND) {
-            if (!$has_cur) {
-                $cur_beg = $beg1;
-                $has_cur = 1;
-            }
-            $cur_end = $end1;
+            push(@new_selections, "$cur_beg,$first_end");
+            $cur_beg = undef;
+            $advance_first = 1;
+            $advance_second = 1;
+        } elsif ($overlap == FIRST_CONTAINS_SECOND) {
+            $advance_second = 1;
         } elsif ($overlap == FIRST_END_OVERLAPS_SECOND_BEGIN) {
-            if (!$has_cur) {
-                $cur_beg = $beg1;
-                $has_cur = 1;
-            }
-            $cur_end = $end2;
+            $advance_first = 1;
+        } elsif ($overlap == FIRST_ENTIRELY_AFTER_SECOND) {
+            push(@new_selections, "$cur_beg,$second_end");
+            $cur_beg = undef;
+            $advance_second = 1;
+        } elsif ($overlap == FIRST_CONTAINED_BY_SECOND) {
+            $advance_first = 1;
         } elsif ($overlap == FIRST_BEGIN_OVERLAPS_SECOND_END) {
-            if (!$has_cur) {
-                $cur_beg = $beg2;
-                $has_cur = 1;
-            }
-            $cur_end = $end1;
+            $advance_second = 1;
         }
 
-        if (compare_coords($end1, $end2) >= 0) {
-            $j++;
-        } else {
+        if ($advance_first == 1) {
             $i++;
+            if ($i == $num_current_selections) {
+                if (defined($cur_beg)) {
+                    push(@new_selections, "$cur_beg,$second_end");
+                    $cur_beg = undef;
+                }
+                while ($j < $num_register_selections) {
+                    push(@new_selections, $register_selections_descs[$j]);
+                    $j++;
+                }
+                last;
+            }
+            ($first_beg, $first_end) = get_selection_coords($current_selections_descs[$i]);
         }
-    }
-    while ($i < $num_current_selections) {
-        push(@new_selections, $current_selections_descs[$i]);
-        $i++;
-    }
-    while ($j < $num_register_selections) {
-        push(@new_selections, $register_selections_descs[$j]);
-        $j++;
+        if ($advance_second == 1) {
+            $j++;
+            if ($j == $num_register_selections) {
+                if (defined($cur_beg)) {
+                    push(@new_selections, "$cur_beg,$first_end");
+                    $cur_beg = undef;
+                }
+                while ($i < $num_current_selections) {
+                    push(@new_selections, $current_selections_descs[$i]);
+                    $i++;
+                }
+                last;
+            }
+            ($second_beg, $second_end) = get_selection_coords($register_selections_descs[$j]);
+        }
     }
 } elsif ($operation eq 'DIFFERENCE') {
 

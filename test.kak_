@@ -77,12 +77,12 @@ do-operation-and-check intersection "'b'"
 do-operation-and-check difference "'a' 'c'"
 
 set-buffer '{(a)(b)(c)}'
-#do-operation-and-check union "'abc'" TODO check
+do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'a' 'b' 'c'"
 assert-command-fails %{ set-operation difference }
 
 set-buffer '{a(b}c)'
-#do-operation-and-check union "'abc'" TODO check
+do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'b'"
 do-operation-and-check difference "'c'"
 
@@ -103,11 +103,10 @@ do-operation-and-check union "'foo' 'bar' 'abc' 'def'"
 assert-command-fails %{ set-operation intersection }
 do-operation-and-check difference "'foo' 'abc'"
 
-
 set-buffer '{(foo) (bar)
 (abc) (def)}'
-#do-operation-and-check union "'foo bar
-#abc def'" TODO check
+do-operation-and-check union "'foo bar
+abc def'"
 do-operation-and-check intersection "'foo' 'bar' 'abc' 'def'"
 assert-command-fails %{ set-operation difference }
 
@@ -117,7 +116,7 @@ do-operation-and-check intersection "'ba'"
 do-operation-and-check difference "'r ' 'def'"
 
 set-buffer '{f(oo)( b)a}(r {b)(a}z) {abc} (de{f) g}hi'
-#do-operation-and-check union "'foo ba' 'r baz' 'abc' 'def g'" TODO check
+do-operation-and-check union "'foo ba' 'r baz' 'abc' 'def g'"
 do-operation-and-check intersection "'oo' ' b' 'b' 'a' 'f'"
 do-operation-and-check difference "'r ' 'z' 'de'"
 
