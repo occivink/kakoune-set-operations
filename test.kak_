@@ -120,4 +120,9 @@ do-operation-and-check union "'foo ba' 'r baz' 'abc' 'def g'"
 do-operation-and-check intersection "'oo' ' b' 'b' 'a' 'f'"
 do-operation-and-check difference "'r ' 'z' 'de'"
 
+set-buffer '(abc)d(efg{hi)j(kl}{m}no){pq}rstu{vwxyz}ABCD(E{FG}HIJK)L({M}NO{P}QRSTUVW{X)(Y)Z}0{1}2{3}456789'
+do-operation-and-check union "'abc' 'efghijklmno' 'pq' 'vwxyz' 'EFGHIJK' 'MNOPQRSTUVWXYZ' '1' '3'"
+do-operation-and-check intersection "'hi' 'kl' 'm' 'FG' 'M' 'P' 'X' 'Y'"
+do-operation-and-check difference "'abc' 'efg' 'no' 'E' 'HIJK' 'NO' 'QRSTUVW'"
+
 delete-buffer
