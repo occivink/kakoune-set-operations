@@ -1,6 +1,7 @@
 # kakoune-set-operations
 
 TODO
+
 ## Setup
 
 Add `set-operations.kak` to your `autoload` directory: `~/.config/kak/autoload/`, or source it manually.
@@ -11,7 +12,7 @@ TODO
 
 ### Examples
 
-
+TODO
 
 ## Tests
 
@@ -19,7 +20,7 @@ TODO
 
 ## See also
 
-TODO
+[selection-sets.kak](https://gitlab.com/Screwtapello/kakoune-selection-sets/-/blob/main/selection-sets.kak) by Screwtapello
 
 ## License
 
