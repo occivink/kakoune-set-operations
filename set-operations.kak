@@ -3,7 +3,6 @@ provide-module set-operations %§
 define-command set-operation -params .. -docstring '
 TODO
 ' %{
-    # TODO re-update the mark register, so that the timestamp matches
     eval -save-regs '^' %sh{
         operation_set=0
         operation=''
