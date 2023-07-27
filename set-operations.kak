@@ -316,6 +316,7 @@ if ($operation eq 'INTERSECTION') {
                 if (defined($cur_beg)) {
                     push(@new_selections, "$cur_beg,$second_end");
                     $cur_beg = undef;
+                    $j++;
                 }
                 while ($j < $num_register_selections) {
                     push(@new_selections, $register_selections_descs[$j]);
@@ -331,6 +332,7 @@ if ($operation eq 'INTERSECTION') {
                 if (defined($cur_beg)) {
                     push(@new_selections, "$cur_beg,$first_end");
                     $cur_beg = undef;
+                    $i++;
                 }
                 while ($i < $num_current_selections) {
                     push(@new_selections, $current_selections_descs[$i]);
