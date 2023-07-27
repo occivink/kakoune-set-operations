@@ -411,6 +411,21 @@ if ($operation eq 'INTERSECTION') {
     }
 }
 
+# sanity checks
+my $num_new_selections = scalar(@new_selections);
+for my $i (0 .. ($num_new_selections - 1)) {
+    my ($cur_beg, $cur_end) = get_selection_coords($new_selections[$i]);
+    if (compare_coords($cur_beg, $cur_end) > 0) {
+        exit(7);
+    }
+    if ($i < ($num_new_selections - 1)) {
+        my ($next_beg, $next_end) = get_selection_coords($new_selections[$i + 1]);
+        if (compare_coords($next_beg, $cur_end) <= 0) {
+            exit(8);
+        }
+    }
+}
+
 if (scalar(@new_selections) == 0) {
     print("fail 'No selections remaining'");
 } else {
