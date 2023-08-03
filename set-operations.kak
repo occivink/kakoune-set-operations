@@ -1,7 +1,12 @@
 provide-module set-operations %§
 
 define-command set-operation -params .. -docstring '
-TODO
+set-operation [-register <register>] <operation>: TODO
+Operation can be one of the following:
+    union
+    intersection
+    difference
+    hull
 ' %{
     eval -save-regs '^' %sh{
         operation_set=0
@@ -24,6 +29,7 @@ TODO
                     'union') ;;
                     'intersection') ;;
                     'difference') ;;
+                    'hull') ;;
                     *)
                         printf 'fail TODO'
                         exit
@@ -142,6 +148,16 @@ sub min_coord {
         return $rhs;
     } else {
         return $lhs;
+    }
+}
+
+sub max_coord {
+    my $lhs = shift;
+    my $rhs = shift;
+    if (compare_coords($lhs, $rhs) > 0) {
+        return $lhs;
+    } else {
+        return $rhs;
     }
 }
 
@@ -411,6 +427,18 @@ if ($operation eq 'INTERSECTION') {
             ($second_beg, $second_end) = get_selection_coords($register_selections_descs[$j]);
         }
     }
+} elsif ($operation eq 'HULL') {
+    my $tmp;
+    my ($beg1, $tmp) = get_selection_coords($current_selections_descs[0]);
+    my ($beg2, $tmp) = get_selection_coords($register_selections_descs[0]);
+
+    my ($tmp, $end1) = get_selection_coords($current_selections_descs[$num_current_selections - 1]);
+    my ($tmp, $end2) = get_selection_coords($register_selections_descs[$num_register_selections - 1]);
+
+    my $min = min_coord($beg1, $beg2);
+    my $max = max_coord($end1, $end2);
+
+    push(@new_selections, "$min,$max");
 }
 
 # sanity checks
