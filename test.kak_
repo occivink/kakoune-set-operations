@@ -60,42 +60,49 @@ set-buffer '(a)b{c}'
 do-operation-and-check union "'a' 'c'"
 assert-command-fails %{ set-operation intersection }
 do-operation-and-check difference "'a'"
+do-operation-and-check symmetric-difference "'a' 'c'"
 do-operation-and-check hull "'abc'"
 
 set-buffer '(ab{c})'
 do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'c'"
 do-operation-and-check difference "'ab'"
+do-operation-and-check symmetric-difference "'ab'"
 do-operation-and-check hull "'abc'"
 
 set-buffer '{(a)b}c'
 do-operation-and-check union "'ab'"
 do-operation-and-check intersection "'a'"
 assert-command-fails %{ set-operation difference }
+do-operation-and-check symmetric-difference "'b'"
 do-operation-and-check hull "'ab'"
 
 set-buffer '(a{b}c)'
 do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'b'"
 do-operation-and-check difference "'a' 'c'"
+do-operation-and-check symmetric-difference "'a' 'c'"
 do-operation-and-check hull "'abc'"
 
 set-buffer '{(a)(b)(c)}'
 do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'a' 'b' 'c'"
 assert-command-fails %{ set-operation difference }
+assert-command-fails %{ set-operation symmetric-difference }
 do-operation-and-check hull "'abc'"
 
 set-buffer '{a(b}c)'
 do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'b'"
 do-operation-and-check difference "'c'"
+do-operation-and-check symmetric-difference "'a' 'c'"
 do-operation-and-check hull "'abc'"
 
 set-buffer '({a}{b}{c})'
 do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'a' 'b' 'c'"
 assert-command-fails %{ set-operation difference }
+assert-command-fails %{ set-operation symmetric-difference }
 do-operation-and-check hull "'abc'"
 
 set-buffer '(foo bar)
@@ -103,6 +110,7 @@ set-buffer '(foo bar)
 do-operation-and-check union "'foo bar' 'abc def'"
 assert-command-fails %{ set-operation intersection }
 do-operation-and-check difference "'foo bar'"
+do-operation-and-check symmetric-difference "'foo bar' 'abc def'"
 do-operation-and-check hull "'foo bar
 abc def'"
 
@@ -111,6 +119,7 @@ set-buffer '(foo) {bar}
 do-operation-and-check union "'foo' 'bar' 'abc' 'def'"
 assert-command-fails %{ set-operation intersection }
 do-operation-and-check difference "'foo' 'abc'"
+do-operation-and-check symmetric-difference "'foo' 'bar' 'abc' 'def'"
 do-operation-and-check hull "'foo bar
 abc def'"
 
@@ -120,6 +129,8 @@ do-operation-and-check union "'foo bar
 abc def'"
 do-operation-and-check intersection "'foo' 'bar' 'abc' 'def'"
 assert-command-fails %{ set-operation difference }
+#do-operation-and-check symmetric-difference "' ' '
+#' ' '" TODO
 do-operation-and-check hull "'foo bar
 abc def'"
 
@@ -127,18 +138,21 @@ set-buffer 'f{oo (ba}r ){ab}c (def)'
 do-operation-and-check union "'oo bar ' 'ab' 'def'"
 do-operation-and-check intersection "'ba'"
 do-operation-and-check difference "'r ' 'def'"
+do-operation-and-check symmetric-difference "'oo ' 'r ' 'ab' 'def'"
 do-operation-and-check hull "'oo bar abc def'"
 
 set-buffer '{f(oo)( b)a}(r {b)(a}z) {abc} (de{f) g}hi'
 do-operation-and-check union "'foo ba' 'r baz' 'abc' 'def g'"
 do-operation-and-check intersection "'oo' ' b' 'b' 'a' 'f'"
 do-operation-and-check difference "'r ' 'z' 'de'"
+do-operation-and-check symmetric-difference "'f' 'a' 'r ' 'z' 'abc' 'de' ' g'"
 do-operation-and-check hull "'foo bar baz abc def g'"
 
 set-buffer '(abc)d(efg{hi)j(kl}{m}no){pq}rstu{vwxyz}ABCD(E{FG}HIJK)L({M}NO{P}QRSTUVW{X)(Y)Z}0{1}2{3}456789'
 do-operation-and-check union "'abc' 'efghijklmno' 'pq' 'vwxyz' 'EFGHIJK' 'MNOPQRSTUVWXYZ' '1' '3'"
 do-operation-and-check intersection "'hi' 'kl' 'm' 'FG' 'M' 'P' 'X' 'Y'"
 do-operation-and-check difference "'abc' 'efg' 'no' 'E' 'HIJK' 'NO' 'QRSTUVW'"
+do-operation-and-check symmetric-difference "'abc' 'efg' 'j' 'no' 'pq' 'vwxyz' 'E' 'HIJK' 'NO' 'QRSTUVW' 'Z' '1' '3'"
 do-operation-and-check hull "'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123'"
 
 delete-buffer

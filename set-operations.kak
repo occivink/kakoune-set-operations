@@ -29,6 +29,7 @@ Operation can be one of the following:
                     'union') ;;
                     'intersection') ;;
                     'difference') ;;
+                    'symmetric-difference') ;;
                     'hull') ;;
                     *)
                         printf 'fail TODO'
@@ -298,6 +299,12 @@ sub union {
     my $size_list_1 = scalar(@$list_1_ref);
     my $size_list_2 = scalar(@$list_2_ref);
 
+    if ($size_list_1 == 0) {
+        return @$list_2_ref;
+    } elsif($size_list_2 == 0) {
+        return @$list_1_ref;
+    }
+
     my $i = 0;
     my $j = 0;
 
@@ -485,6 +492,11 @@ if ($operation eq 'INTERSECTION') {
 } elsif ($operation eq 'DIFFERENCE') {
     my @lines_length = read_lines_length();
     @new_selections = difference(\@current_selections_descs, \@register_selections_descs, \@lines_length);
+} elsif ($operation eq 'SYMMETRIC-DIFFERENCE') {
+    my @lines_length = read_lines_length();
+    my @temp1 = difference(\@current_selections_descs, \@register_selections_descs, \@lines_length);
+    my @temp2 = difference(\@register_selections_descs, \@current_selections_descs, \@lines_length);
+    @new_selections = union(\@temp1, \@temp2);
 } elsif ($operation eq 'HULL') {
     @new_selections = hull(\@current_selections_descs, \@register_selections_descs);
 }
