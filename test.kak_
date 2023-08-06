@@ -129,10 +129,22 @@ do-operation-and-check union "'foo bar
 abc def'"
 do-operation-and-check intersection "'foo' 'bar' 'abc' 'def'"
 assert-command-fails %{ set-operation difference }
-#do-operation-and-check symmetric-difference "' ' '
-#' ' '" TODO
+do-operation-and-check symmetric-difference "' ' '
+' ' '"
 do-operation-and-check hull "'foo bar
 abc def'"
+
+set-buffer '(foo bar
+{abc) de}'
+do-operation-and-check union "'foo bar
+abc de'"
+do-operation-and-check intersection "'abc'"
+do-operation-and-check difference "'foo bar
+'"
+do-operation-and-check symmetric-difference "'foo bar
+' ' de'"
+do-operation-and-check hull "'foo bar
+abc de'"
 
 set-buffer 'f{oo (ba}r ){ab}c (def)'
 do-operation-and-check union "'oo bar ' 'ab' 'def'"

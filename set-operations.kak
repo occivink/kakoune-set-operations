@@ -177,7 +177,8 @@ sub neighbor_coord {
         if ($coords[1] > 1) {
             return $coords[0] . "." . ($coords[1] - 1);
         } else {
-            return ($coords[0] - 1) . "." . $$lines_length_ref[$coords[0]];
+            # kakoune lines are 1-indexed, so -2 (== -1 (previous line) -1 (1-indexed))
+            return ($coords[0] - 1) . "." . $$lines_length_ref[$coords[0] - 2];
         }
     } else {
         exit(5);
