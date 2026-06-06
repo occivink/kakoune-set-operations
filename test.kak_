@@ -48,7 +48,7 @@ define-command set-buffer -params 1 %{
         exec -draft '<a-;>hd'
         exec -draft 'ld'
 
-        reg caret "%val{buffile}@%val{timestamp}@0" %reg{t}
+        reg caret "%val{bufname}@%val{timestamp}@0" %reg{t}
     }
 
 }
