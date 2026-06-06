@@ -1,28 +1,47 @@
 provide-module set-operations %§
 
 define-command set-operation -params .. -docstring '
-set-operation [-register <register>] <operation>: TODO
-Operation can be one of the following:
-    union
-    intersection
-    difference
-    hull
-' %{
+set-operation [-register <register>] <operation>: perform a set operation on two sets of selections
+
+The first set is the list of current selections.
+The second set is the list of selections contained in the specified register
+(`^` by default, the ''mark'' register, can be changed with -register)
+
+The current selections are modified to represent the result of the operation.
+
+The operation can be one of the following:
+  union: adds the selections in the second set to the current ones
+  intersection: reduces the selections to only the parts that are contained in both input sets
+  difference: removes the selection parts that appear in both sets from the current selections
+  symmetric-difference: replaces the current selections with only the parts that appear in
+                        only one of the two sets
+  hull: produces the smallest selection that contains all selections from both sets
+' -shell-script-candidates %{
+    printf '%s\n'  -register union intersection difference symmetric-difference hull
+} %{
+    try %{ eval -draft %{ exec z } } catch %{
+        fail 'The register ''^'' must contain a valid list of selections'
+    }
     eval -save-regs '^' %sh{
         operation_set=0
         operation=''
 
+        n=0
         while [ "$#" -ge 1 ]; do
+            n=$((n + 1))
             if [ "$1" = '-register' ]; then
                 shift
                 if [ "$#" -eq 0 ]; then
                     printf 'fail TODO'
                     exit
                 fi
+                printf 'fail TODO'
+                exit
+
                 # TODO move reg content to ^
             else
                 if [ "$operation_set" != 0 ]; then
-                    printf 'fail TODO'
+                    printf 'fail Unrecognized argument "'\''%%arg{%s}'\''"' "$n"
                     exit
                 fi
                 case "$1" in
@@ -32,7 +51,7 @@ Operation can be one of the following:
                     'symmetric-difference') ;;
                     'hull') ;;
                     *)
-                        printf 'fail TODO'
+                        printf 'fail Unrecognized set operation "'\''%%arg{%s}'\''"' "$n"
                         exit
                         ;;
                 esac
@@ -42,7 +61,7 @@ Operation can be one of the following:
             shift
         done
         if [ "$operation_set" = 0 ]; then
-            printf 'fail TODO'
+            printf 'fail A set operation must be specified'
             exit
         fi
 
@@ -96,7 +115,10 @@ sub read_array {
     return parse_shell_quoted($response_quoted);
 }
 
+# returns an array containing the length of all lines in the buffer
 sub read_lines_length {
+    # rotate selections with ')' to ensure the main selection is the first one
+    # `selections_desc` is then in line-order
     my @descs = read_array("exec '%<a-s>);'", "%val{selections_desc}");
     my @res;
     for my $desc (@descs) {
@@ -129,6 +151,7 @@ sub compare_coords {
     return 0;
 }
 
+# return the first and last coordinate of a selection
 sub get_selection_coords {
     my $input = shift;
     if ($input !~ m/^(.*?),(.*?)$/) {
@@ -162,10 +185,15 @@ sub max_coord {
     }
 }
 
+# return the coord that is just above or before the specified coord
+# the length of all lines is required, in case we're requesting
+# before one at the beginning of a line, or after one at the end of
+# a line
 sub neighbor_coord {
     my $lines_length_ref = shift;
     my $coord = shift;
     my $direction = shift;
+
     my @coords = split(/\./, $coord);
     if ($direction == 1) {
         if ($coords[1] < ($$lines_length_ref[$coords[0] - 1])) {
@@ -193,6 +221,7 @@ use constant FIRST_CONTAINS_SECOND => 5;
 use constant FIRST_CONTAINED_BY_SECOND => 6;
 use constant FIRST_EQUALS_SECOND => 7;
 
+# compute how two selections (defined by their start and end coordinates) overlap
 sub compute_overlap {
     my $beg1 = shift;
     my $end1 = shift;
@@ -229,8 +258,12 @@ sub compute_overlap {
     return 0;
 }
 
+# trick: by using `exec "%reg{hash}()"`, we ensure that the main selection is the first one
+# this works because "%reg{hash}" gives us the the (1-based) index of main selection
+# we then rotate backwards by this much (landing us on the last selection), followed by once forwards
 my @current_selections_descs = read_array("exec \"%reg{hash}()\"", "%val{selections_desc}");
 my @register_selections_descs = read_array("exec z ; exec \"%reg{hash}()\"", "%val{selections_desc}");
+
 if (scalar(@current_selections_descs) == 0 || scalar(@register_selections_descs) == 0) {
     exit(6);
 }
@@ -445,6 +478,8 @@ sub difference {
         if ($advance_second == 1) {
             $j++;
             if ($j == $size_list_2) {
+                # register list is already empty:
+                # push current selection, plus everything left in the list
                 push(@res, "$cur_beg,$cur_end");
                 $i++;
                 while ($i < $size_list_1) {
