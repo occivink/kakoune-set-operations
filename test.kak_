@@ -63,6 +63,20 @@ do-operation-and-check difference "'a'"
 do-operation-and-check symmetric-difference "'a' 'c'"
 do-operation-and-check hull "'abc'"
 
+set-buffer '({a})bc'
+do-operation-and-check union "'a'"
+do-operation-and-check intersection "'a'"
+assert-command-fails %{ set-operation difference }
+assert-command-fails %{ set-operation symmetric-difference }
+do-operation-and-check hull "'a'"
+
+set-buffer '({a}){b}c'
+do-operation-and-check union "'a' 'b'"
+do-operation-and-check intersection "'a'"
+assert-command-fails %{ set-operation difference }
+do-operation-and-check symmetric-difference "'b'"
+do-operation-and-check hull "'ab'"
+
 set-buffer '(ab{c})'
 do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'c'"

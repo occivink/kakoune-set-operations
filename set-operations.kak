@@ -387,6 +387,9 @@ sub union {
                     $cur_beg = undef;
                     $j++;
                 }
+                if ($advance_second == 1) {
+                    $j++;
+                }
                 while ($j < $size_list_2) {
                     push(@res, $$list_2_ref[$j]);
                     $j++;
