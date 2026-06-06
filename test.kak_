@@ -77,6 +77,13 @@ assert-command-fails %{ set-operation difference }
 do-operation-and-check symmetric-difference "'b'"
 do-operation-and-check hull "'ab'"
 
+set-buffer '({a}){b}(c)'
+do-operation-and-check union "'a' 'b' 'c'"
+do-operation-and-check intersection "'a'"
+do-operation-and-check difference "'c'"
+do-operation-and-check symmetric-difference "'b' 'c'"
+do-operation-and-check hull "'abc'"
+
 set-buffer '(ab{c})'
 do-operation-and-check union "'abc'"
 do-operation-and-check intersection "'c'"
