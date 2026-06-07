@@ -55,7 +55,18 @@ define-command set-buffer -params 1 %{
 
 edit -scratch *set-operations-test-1*
 
-# basic tests
+# basic argument parsing
+exec -save-regs '' Z
+assert-command-fails %{ set-operation }
+assert-command-fails %{ set-operation '' }
+assert-command-fails %{ set-operation 'test' 'test' }
+assert-command-fails %{ set-operation 'union' 'union' }
+
+# ^ register empty
+reg caret
+assert-command-fails %{ set-operation 'union' }
+
+# functionality tests
 set-buffer '(a)b{c}'
 do-operation-and-check union "'a' 'c'"
 assert-command-fails %{ set-operation intersection }
