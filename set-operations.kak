@@ -12,11 +12,12 @@ The operation can be one of the following:
   union: adds the selections in the second set to the current ones
   intersection: reduces the selections to only the parts that are contained in both input sets
   difference: removes the selection parts that appear in both sets from the current selections
+  reverse-difference: same as ''difference'', but the role of the two input sets is inversed
   symmetric-difference: replaces the current selections with only the parts that appear in
                         only one of the two sets
   hull: produces the smallest selection that contains all selections from both sets
 ' -shell-script-candidates %{
-    printf '%s\n' union intersection difference symmetric-difference hull
+    printf '%s\n' union intersection difference reverse-difference symmetric-difference hull
 } %{
     try %{ eval -draft %{ exec z } } catch %{
         fail 'The ''^'' register must contain a valid list of selections'
@@ -36,6 +37,7 @@ The operation can be one of the following:
                 'union') ;;
                 'intersection') ;;
                 'difference') ;;
+                'reverse-difference') ;;
                 'symmetric-difference') ;;
                 'hull') ;;
                 *)
@@ -515,6 +517,9 @@ if ($operation eq 'INTERSECTION') {
     @new_selections = intersection(\@current_selections_descs, \@register_selections_descs);
 } elsif ($operation eq 'UNION') {
     @new_selections = union(\@current_selections_descs, \@register_selections_descs);
+} elsif ($operation eq 'REVERSE-DIFFERENCE') {
+    my @lines_length = read_lines_length();
+    @new_selections = difference(\@register_selections_descs, \@current_selections_descs, \@lines_length);
 } elsif ($operation eq 'DIFFERENCE') {
     my @lines_length = read_lines_length();
     @new_selections = difference(\@current_selections_descs, \@register_selections_descs, \@lines_length);
