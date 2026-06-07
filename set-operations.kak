@@ -1,11 +1,10 @@
 provide-module set-operations %§
 
 define-command set-operation -params .. -docstring '
-set-operation [-register <register>] <operation>: perform a set operation on two sets of selections
+set-operation <operation>: perform a set operation on two sets of selections
 
 The first set is the list of current selections.
-The second set is the list of selections contained in the specified register
-(`^` by default, the ''mark'' register, can be changed with -register)
+The second set is the list of selections contained in the mark register ''^''
 
 The current selections are modified to represent the result of the operation.
 
@@ -17,47 +16,35 @@ The operation can be one of the following:
                         only one of the two sets
   hull: produces the smallest selection that contains all selections from both sets
 ' -shell-script-candidates %{
-    printf '%s\n'  -register union intersection difference symmetric-difference hull
+    printf '%s\n' union intersection difference symmetric-difference hull
 } %{
     try %{ eval -draft %{ exec z } } catch %{
-        fail 'The register ''^'' must contain a valid list of selections'
+        fail 'The ''^'' register must contain a valid list of selections'
     }
-    eval -save-regs '^' %sh{
+    eval %sh{
         operation_set=0
         operation=''
 
         n=0
         while [ "$#" -ge 1 ]; do
             n=$((n + 1))
-            if [ "$1" = '-register' ]; then
-                shift
-                if [ "$#" -eq 0 ]; then
-                    printf 'fail TODO'
-                    exit
-                fi
-                printf 'fail TODO'
+            if [ "$operation_set" != 0 ]; then
+                printf 'fail Unrecognized argument "'\''%%arg{%s}'\''"' "$n"
                 exit
-
-                # TODO move reg content to ^
-            else
-                if [ "$operation_set" != 0 ]; then
-                    printf 'fail Unrecognized argument "'\''%%arg{%s}'\''"' "$n"
-                    exit
-                fi
-                case "$1" in
-                    'union') ;;
-                    'intersection') ;;
-                    'difference') ;;
-                    'symmetric-difference') ;;
-                    'hull') ;;
-                    *)
-                        printf 'fail Unrecognized set operation "'\''%%arg{%s}'\''"' "$n"
-                        exit
-                        ;;
-                esac
-                operation="$1"
-                operation_set=1
             fi
+            case "$1" in
+                'union') ;;
+                'intersection') ;;
+                'difference') ;;
+                'symmetric-difference') ;;
+                'hull') ;;
+                *)
+                    printf 'fail Unrecognized set operation "'\''%%arg{%s}'\''"' "$n"
+                    exit
+                    ;;
+            esac
+            operation="$1"
+            operation_set=1
             shift
         done
         if [ "$operation_set" = 0 ]; then
